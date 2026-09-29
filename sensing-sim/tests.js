@@ -90,20 +90,20 @@
   function laps(lp, n) { const out = [lp[0]]; for (let k = 0; k < n; k++) lp.slice(1).forEach(p => out.push(p)); return out; }
   function loopLen(lp) { let d = 0; for (let i = 1; i < lp.length; i++) d += Math.hypot(lp[i][0] - lp[i - 1][0], lp[i][1] - lp[i - 1][1]); return d; }
   T.door = room => ({ inside: [S.doorX(room), room.l - 0.45], outside: [S.doorX(room), room.l + 0.6] });
-  T.furnSpots = room => ({ a: [room.w - 0.45, room.l * 0.62], b: [room.w * 0.42, room.l * 0.5] });
+  T.furnSpots = room => ({ a: [0.45, room.l * 0.66], b: [room.w * 0.42, room.l * 0.5] });   // a는 매트와 겹치지 않게 서쪽
 
   // ---- 테스트 목록 ----
   T.list = [
     {
       id: 'check', no: '0', name: '수집 경로 점검', who: 'ESP 1대 · 사람 없음', gt: false, ble: false,
       purpose: '수신기 1대에서 CSI와 Wi-Fi RSSI가 실제로 어떤 간격으로 기록되는지 먼저 확인한다. 6대로 늘리기 전에 한 대의 경로를 검증한다.',
-      prep: ['수신기 RX1 한 대만 사용자 프로파일(STA + CSI 콜백)로 전환', '펌웨어 버전·설정을 고정하고 기록', '공유기 채널·대역폭 고정'],
-      steps: ['공유기 연결과 CSI 콜백 확인', '빈방 60초 기록', '로그로 실제 수집률·순번 누락·최대 공백 확인'],
+      prep: ['송신 ESP와 수신기 RX1 한 대만 사용자 프로파일(csi_send / csi_recv 방식)로 전환', '펌웨어 버전·설정·채널·송신 간격을 고정하고 기록'],
+      steps: ['송신 ESP 패킷 수신과 CSI 콜백 확인', '빈방 60초 기록', '로그로 실제 수집률·순번 누락·최대 공백 확인'],
       records: '수신기 1대의 CSI·패킷 RSSI 원시 로그. 수신기 로컬 시각, 순번, 큐 폐기 수, PC 도착 시각을 따로 남긴다.',
-      notes: ['예제 <code>csi_recv_router</code>의 출력은 시리얼이다. 무선 업로드는 별도로 구현하고 이 점검을 다시 한다', 'Ping 요청 간격을 CSI 수집률로 적지 않는다. 실제 로그에서 잰다'],
+      notes: ['예제 <code>csi_recv</code>의 출력은 시리얼이다. 무선 업로드는 별도로 구현하고 이 점검을 다시 한다', '송신 간격 설정값을 CSI 수집률로 적지 않는다. 실제 로그에서 잰다', '공유기 패킷이 섞이지 않는지 송신원 MAC으로 확인'],
       build(env) {
         const tl = new TL(), o = { ble: false, rx: [1] };
-        tl.add(30, Object.assign({ step: 0, label: 'RX1 연결·콜백 확인' }, o));
+        tl.add(30, Object.assign({ step: 0, label: '송신 ESP → RX1 수신 확인' }, o));
         tl.add(60, Object.assign({ rec: true, step: 1, label: '빈방 60초 기록 · RX1만' }, o));
         tl.add(30, Object.assign({ step: 2, label: '로그 확인 (수집률·누락)' }, o));
         return { tl };
@@ -112,7 +112,7 @@
     {
       id: 'empty', no: '1', name: '빈방 기준', who: '사람 없음 · 수신기 6대', gt: false, ble: true,
       purpose: '사람이 없을 때의 채널을 여러 번 기록해 기준으로 삼는다. 같은 날 앞뒤로 반복하면 시간에 따른 흔들림도 볼 수 있다.',
-      prep: ['수신기 6대와 공유기 위치·채널 기록', '문을 닫고 방 안의 물건 위치를 사진으로 남긴다'],
+      prep: ['송신 ESP·수신기 6대 위치와 채널 기록', '문을 닫고 방 안의 물건 위치를 사진으로 남긴다'],
       steps: ['사람은 방 밖으로 나간다', '60초 기록', '20초 쉬고 반복 (3회)'],
       records: '수신기 6대 × 60초 × 3회. 수신기별 시각 오프셋·드리프트 확인에도 쓴다.',
       notes: ['사람이 문 밖 가까이 서 있어도 링크에 걸릴 수 있다. 기록 중 위치를 적어 둔다'],
@@ -144,26 +144,30 @@
       }
     },
     {
-      id: 'pose', no: '3', name: '자세 3종', who: '서기 · 앉기 · 눕기', gt: true, ble: true,
-      purpose: '같은 위치에서 자세만 바꿔 기록해 행동·자세 라벨 자료를 만든다. 두 위치에서 반복한다.',
-      prep: ['의자와 매트를 두 위치에 준비', '자세 바꾸는 순간을 카메라와 로그에 함께 표시'],
-      steps: ['서기 60초', '앉기 60초', '눕기 60초', '다음 위치로 이동'],
-      records: '위치 2곳 × 자세 3종 × 60초. 자세 전환 구간은 라벨을 따로 둔다.',
-      notes: ['눕기는 상자가 y 방향으로 길다고 가정했다. 실제 방향을 기록한다', '낮은 자세는 높은 수신기 링크에서 벗어나기 쉽다. 오른쪽 링크 비율 참고'],
+      id: 'pose', no: '3', name: '자세 3종', who: '서기 · 앉기 · 눕기(매트)', gt: true, ble: true,
+      purpose: '자세만 바꿔 기록해 행동·자세 라벨 자료를 만든다. 서기·앉기는 두 위치에서, 눕기는 정해 둔 매트(눕기 자리)에서만 기록한다.',
+      prep: ['의자를 두 위치에 준비', '매트를 동쪽 벽 쪽 정해 둔 자리에 고정하고 좌표 실측', '송신 ESP를 매트 옆 낮은 자리(0.3 m)에 설치', '자세 바꾸는 순간을 카메라와 로그에 함께 표시'],
+      steps: ['서기 60초', '앉기 60초', '다음 위치로 이동', '매트에서 눕기 60초 (2회)'],
+      records: '위치 2곳 × 서기·앉기 × 60초 + 매트 눕기 60초 × 2회. 자세 전환 구간은 라벨을 따로 둔다.',
+      notes: ['수신기가 모두 높아서 방 아무 데서나 누우면 링크와 거의 겹치지 않는다. 그래서 눕기는 자리를 정해 두고 송신 ESP를 그 옆에 낮게 둔다 (실제 생활의 침대·매트와 같은 조건)', '따라서 이 자료로 "방 어디서나 눕기 인식"을 주장하지 않는다', '눕기 상자는 y 방향으로 길다고 가정했다. 실제 방향을 기록한다'],
       build(env) {
-        const tl = new TL(), R = env.room, dr = T.door(R);
-        const spots = [[R.w / 2, R.l / 2], [R.w * 0.5, R.l * 0.28]];
-        tl.walk([dr.outside, dr.inside, spots[0]], 0.8, { step: 3, label: '위치 1로' });
+        const tl = new TL(), R = env.room, dr = T.door(R), bed = S.bed(R);
+        const spots = [[R.w * 0.42, R.l / 2], [R.w * 0.5, R.l * 0.28]], side = [bed.x - 0.6, bed.y];
+        tl.walk([dr.outside, dr.inside, spots[0]], 0.8, { step: 2, label: '위치 1로' });
         spots.forEach((p, i) => {
-          if (i > 0) tl.walk([spots[i - 1], p], 0.6, { step: 3, label: '위치 2로' });
+          if (i > 0) tl.walk([spots[i - 1], p], 0.6, { step: 2, label: '위치 2로' });
           tl.add(60, { path: [p], pose: 'stand', rec: true, step: 0, label: '위치 ' + (i + 1) + ' · 서기' });
           tl.add(8, { path: [p], pose: 'sit', step: 1, label: '앉는 중' });
           tl.add(60, { path: [p], pose: 'sit', rec: true, step: 1, label: '위치 ' + (i + 1) + ' · 앉기' });
-          tl.add(10, { path: [p], pose: 'lie', step: 2, label: '눕는 중' });
-          tl.add(60, { path: [p], pose: 'lie', rec: true, step: 2, label: '위치 ' + (i + 1) + ' · 눕기' });
-          tl.add(10, { path: [p], pose: 'stand', step: 3, label: '일어나기' });
+          tl.add(6, { path: [p], pose: 'stand', step: 2, label: '일어나기' });
         });
-        tl.walk([spots[1], dr.inside, dr.outside], 0.8, { step: 3, label: '퇴장' });
+        tl.walk([spots[1], side], 0.6, { step: 3, label: '매트로' });
+        for (let k = 0; k < 2; k++) {
+          tl.add(10, { path: [[bed.x, bed.y]], pose: 'lie', step: 3, label: '눕는 중' });
+          tl.add(60, { path: [[bed.x, bed.y]], pose: 'lie', rec: true, step: 3, label: '매트 눕기 ' + (k + 1) + '/2' });
+          tl.add(10, { path: [side], pose: 'stand', step: 3, label: '일어나기' });
+        }
+        tl.walk([side, dr.inside, dr.outside], 0.8, { step: 3, label: '퇴장' });
         return { tl, points: spots, poseSpots: true };
       }
     },

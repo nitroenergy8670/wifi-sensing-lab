@@ -41,7 +41,7 @@
     if (!info) { if (card) card.remove(); return; }
     const d = S.DEVICES[info.kind];
     if (!d) return;
-    let title = { ap: '공유기', ble: 'BLE 송신기', camera: '정답 카메라', desk: '기록 PC', charger: 'USB 충전기', person: '사람', furniture: '옮기는 물건' }[info.kind] || '';
+    let title = { ap: '송신 ESP', router: '공유기 (업로드 통로)', ble: 'BLE 송신기', camera: '정답 카메라', desk: '기록 PC', charger: 'USB 충전기', person: '사람', furniture: '옮기는 물건' }[info.kind] || '';
     let extra = '';
     if (info.kind === 'rx') {
       title = '수신기 RX' + info.id;
@@ -93,7 +93,7 @@
       '<div class="blk"><h3>' + esc(lay.layout.name) + '</h3><span class="small">' + esc(lay.layout.note) + '</span>' +
       '<label class="field">프레넬 영역을 볼 수신기<select id="sel-rx">' + lay.rx.map(r => '<option value="' + r.id + '"' + (r.id === st.selRx ? ' selected' : '') + '>RX' + r.id + '</option>').join('') + '</select></label></div>' +
       '<div class="blk"><h3>좌표 (m)</h3><table><thead><tr><th>장치</th><th>x</th><th>y</th><th>z</th></tr></thead><tbody>' +
-      row('공유기', lay.ap) + lay.rx.map(r => row('RX' + r.id, r)).join('') + (st.ble ? row('BLE', lay.ble) : '') +
+      row('송신 ESP', lay.ap) + lay.rx.map(r => row('RX' + r.id, r)).join('') + (st.ble ? row('BLE', lay.ble) : '') +
       '</tbody></table><span class="small">설치 후 안테나 중심을 실측해 바꿔 적는다. 공동 앵커를 쓰면 팀원 앵커 좌표와 같다.</span></div>' +
       '<div class="blk"><h3>바닥 겹침 지도 · ' + POSE_NAME[st.mapPose] + '</h3><dl class="kv"><dt>겹침 0개인 자리</dt><dd>' + m.zero.toFixed(1) + '%</dd><dt>2개 이상 겹치는 자리</dt><dd>' + m.multi.toFixed(1) + '%</dd><dt>계산한 자리</dt><dd>' + m.valid + '곳 · ' + (m.step * 100).toFixed(0) + ' cm 간격</dd></dl>' +
       '<span class="small">사람 상자와 링크의 제1 프레넬 영역이 겹치는지만 센 값이다. 감지 성공률이나 실제 사각지대가 아니다. 겹침 0개 자리에서도 반사파로 신호는 바뀐다.</span></div>' +

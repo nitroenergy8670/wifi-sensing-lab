@@ -33,10 +33,9 @@
       const n = wallNormal(room, p[0], p[1]);
       return { id: i + 1, x: p[0], y: p[1], z: Math.min(L.z[i], zmax), nx: n[0], ny: n[1] };
     });
-    const apx = L.ap[0] === 0.15 ? 0.15 : L.ap[0] * kx;
-    const apy = L.ap[1] === 0.15 ? 0.15 : L.ap[1] * ky;
-    const an = wallNormal(room, apx, apy);
-    const ap = { x: apx, y: apy, z: Math.min(L.ap[2], zmax), nx: an[0], ny: an[1] };
+    // 송신 ESP: 모든 배치 후보에서 매트 옆 낮은 자리 (data.js S.tx)
+    const t = S.tx(room), an = wallNormal(room, t.x, t.y);
+    const ap = { x: t.x, y: t.y, z: Math.min(t.z, zmax), nx: an[0], ny: an[1] };
     const bx = room.w - (S.ROOM_REF.w - S.BLE_TX[0]), by = S.BLE_TX[1];
     const bn = wallNormal(room, bx, by);
     const ble = { x: bx, y: by, z: Math.min(S.BLE_TX[2], zmax), nx: bn[0], ny: bn[1] };

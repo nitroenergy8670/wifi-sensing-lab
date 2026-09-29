@@ -219,7 +219,7 @@
   <header>
     <div class="eyebrow">장치 비착용 Wi-Fi 센싱 · 위치 · 자세 · 재실</div>
     <h1>Wi-Fi 센싱 시뮬레이터</h1>
-    <p class="lede">고정 공유기 1대와 공동 앵커 보드를 전환한 ESP32-S3 수신기 6대로, 장치를 지니지 않은 사람이 만드는 링크 변화를 관측하는 실험을 3D로 미리 본다. 방 크기와 배치 후보를 바꾸면 수신기 좌표, 케이블 길이, 프레넬 겹침 지도, 테스트 경로가 다시 계산된다. 장치를 클릭하면 구성이 나온다.</p>
+    <p class="lede">송신 ESP 1대와 공동 앵커 보드를 전환한 ESP32-S3 수신기 6대로, 장치를 지니지 않은 사람이 만드는 링크 변화를 관측하는 실험을 3D로 미리 본다. 공유기는 측정에 쓰지 않고 방 밖 PC 옆에서 업로드 통로만 맡는다. 방 크기와 배치 후보를 바꾸면 수신기 좌표, 케이블 길이, 프레넬 겹침 지도, 테스트 경로가 다시 계산된다. 장치를 클릭하면 구성이 나온다.</p>
     <p class="notice">배치는 설치 전 <b>후보</b>, 신호는 단순 반사·감쇠·산란 모델의 <b>합성 값</b>이다. 실제 수집·인식 정확도·필요 수신기 수를 보여 주지 않는다. 실측은 아직 하지 않았다.</p>
   </header>
 
@@ -230,7 +230,7 @@
 
   <section id="env">
     <h2>1. 테스트 환경</h2>
-    <p class="lede">공유기에서 수신기로 가는 직접경로 6개가 측정 링크다. 사람 상자가 링크의 제1 프레넬 영역(2.437 GHz)과 겹치면 그 링크가 사람의 영향을 크게 받는다고 본다. 바닥 지도는 사람이 그 자리에 섰을 때 겹치는 링크 수다.</p>
+    <p class="lede">송신 ESP에서 수신기로 가는 직접경로 6개가 측정 링크다. 사람 상자가 링크의 제1 프레넬 영역(2.437 GHz)과 겹치면 그 링크가 사람의 영향을 크게 받는다고 본다. 바닥 지도는 사람이 그 자리에 섰을 때 겹치는 링크 수다.</p>
     <div class="controls">
       <label class="field">가로 x (m)<input type="number" id="room-w" min="2" max="10" step="0.01" value="3.11"></label>
       <label class="field">세로 y (m)<input type="number" id="room-l" min="2" max="12" step="0.01" value="4.69"></label>
@@ -257,7 +257,7 @@
 
   <section id="tests">
     <h2>2. 테스트 시뮬레이션</h2>
-    <p class="lede">테스트마다 사람이 어디에서 어떤 자세로 얼마나 머무는지 시간 순서대로 재생한다. 공유기 → 수신기 선은 사람 몸을 지나면 <b style="color:var(--block)">가림</b>, 제1 프레넬 영역과 겹치면 <b style="color:var(--edge)">경계</b>, 나머지는 <b style="color:var(--ok)">LOS</b>로 칠한다. 오른쪽 신호는 같은 상황의 합성 값이다.</p>
+    <p class="lede">테스트마다 사람이 어디에서 어떤 자세로 얼마나 머무는지 시간 순서대로 재생한다. 송신 ESP → 수신기 선은 사람 몸을 지나면 <b style="color:var(--block)">가림</b>, 제1 프레넬 영역과 겹치면 <b style="color:var(--edge)">경계</b>, 나머지는 <b style="color:var(--ok)">LOS</b>로 칠한다. 오른쪽 신호는 같은 상황의 합성 값이다.</p>
     <div class="tabs" role="tablist" id="test-tabs"></div>
     <div class="stage">
       <div class="view" id="test-view"></div>
@@ -293,12 +293,12 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-<script src="data.js"></script>
-<script src="model.js"></script>
-<script src="geom.js"></script>
-<script src="tests.js"></script>
-<script src="view3d.js"></script>
-<script src="link.js"></script>
-<script src="app.js"></script>
+<script src="data.js?v=20260930b"></script>
+<script src="model.js?v=20260930b"></script>
+<script src="geom.js?v=20260930b"></script>
+<script src="tests.js?v=20260930b"></script>
+<script src="view3d.js?v=20260930b"></script>
+<script src="link.js?v=20260930b"></script>
+<script src="app.js?v=20260930b"></script>
 </body>
 </html>

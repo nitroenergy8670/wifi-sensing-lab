@@ -5,12 +5,13 @@
 
   // 장치 자리 (구성도용 좌표, m 단위 느낌만)
   K.NODES = [
-    { id: 'ap', name: '공유기 2.4 GHz', kind: 'ap', p: [1.6, 2.6, 0.9], col: '--ap', size: [0.34, 0.06, 0.22] },
+    { id: 'ap', name: '송신 ESP (보유)', kind: 'ap', p: [1.6, 2.6, 0.9], col: '--ap', size: [0.1, 0.03, 0.06] },
     { id: 'rx1', name: 'RX1', kind: 'rx', p: [0.2, 1.3, 0.9] }, { id: 'rx2', name: 'RX2', kind: 'rx', p: [0.75, 1.3, 0.9] },
     { id: 'rx3', name: 'RX3', kind: 'rx', p: [1.3, 1.3, 0.9] }, { id: 'rx4', name: 'RX4', kind: 'rx', p: [1.85, 1.3, 0.9] },
     { id: 'rx5', name: 'RX5', kind: 'rx', p: [2.4, 1.3, 0.9] }, { id: 'rx6', name: 'RX6', kind: 'rx', p: [2.95, 1.3, 0.9] },
-    { id: 'ble', name: 'BLE 송신기 (선택)', kind: 'ble', p: [3.0, 2.6, 0.9], col: '--radio', size: [0.1, 0.03, 0.06] },
+    { id: 'ble', name: 'BLE 광고 (선택)', kind: 'ble', p: [3.0, 2.6, 0.9], col: '--radio', size: [0.1, 0.03, 0.06] },
     { id: 'chg', name: 'USB 충전기', kind: 'charger', p: [1.6, 0.2, 0.1], col: '--spacer', size: [0.3, 0.08, 0.16] },
+    { id: 'rt', name: '공유기 (업로드 통로)', kind: 'router', p: [0.9, 3.6, 0.9], col: '--board', size: [0.34, 0.06, 0.22] },
     { id: 'pc', name: '기록 PC', kind: 'desk', p: [0.2, 3.6, 0.9], col: '--board', size: [0.4, 0.03, 0.28] },
     { id: 'pi', name: 'Pi 4 + 카메라', kind: 'camera', p: [3.0, 3.6, 0.9], col: '--ok', size: [0.12, 0.04, 0.09] }
   ];
@@ -18,16 +19,16 @@
 
   // 연결 묶음. state: ok(공동 장비로 바로 가능) · todo(구현·설정 필요) · opt(선택) · off(쓰지 않음)
   K.GROUPS = [
-    { id: 'power', name: 'USB 전원', col: '--w-5v', state: 'ok', stateText: '공동 재료', edges: RX.map(r => ['chg', r]),
-      det: '충전기 → 수신기 6대. 데이터는 이 선으로 보내지 않는다.' },
-    { id: 'wifi', name: 'Wi-Fi 패킷 (측정 링크)', col: '--ok', state: 'ok', stateText: '측정 대상', edges: RX.map(r => ['ap', r]),
-      det: '공유기가 보낸 패킷을 수신기가 받으며 CSI·RSSI를 얻는다. 사람이 이 링크 6개를 바꾼다.' },
+    { id: 'power', name: 'USB 전원', col: '--w-5v', state: 'ok', stateText: '공동 재료', edges: RX.map(r => ['chg', r]).concat([['chg', 'ap']]),
+      det: '충전기 → 수신기 6대와 송신 ESP. 데이터는 이 선으로 보내지 않는다.' },
+    { id: 'wifi', name: 'ESP-NOW 패킷 (측정 링크)', col: '--ok', state: 'todo', stateText: '펌웨어 전환 필요', edges: RX.map(r => ['ap', r]),
+      det: '송신 ESP가 보낸 패킷(csi_send 방식)을 수신기가 받아 CSI·RSSI를 얻는다(csi_recv 방식). 사람이 이 링크 6개를 바꾼다. 공유기 패킷은 송신원 MAC으로 제외.' },
     { id: 'ble', name: 'BLE 광고', col: '--radio', state: 'opt', stateText: '선택', edges: RX.map(r => ['ble', r]),
-      det: '고정 광고기 → 수신기 BLE 스캔. Wi-Fi와 RF를 시분할하므로 CSI 단독 확인 뒤 추가.' },
-    { id: 'upload', name: '측정값 업로드', col: '--up', state: 'todo', stateText: '구현 필요', dashed: true, edges: RX.map(r => [r, 'ap']),
-      det: '수신기가 CSI·메타데이터를 큐에 넣고 UDP/TCP로 보낸다. 예제 csi_recv_router는 시리얼 출력이라 새로 구현해야 한다.' },
-    { id: 'store', name: 'PC 저장', col: '--up', state: 'todo', stateText: '설정 필요', edges: [['ap', 'pc']],
-      det: '공유기 → PC 수신 프로그램. LAN 또는 5 GHz 권장. 수신기 시각·순번·PC 도착 시각을 따로 저장.' },
+      det: '송신 ESP가 겸하거나 별도 광고기 → 수신기 BLE 스캔. Wi-Fi와 RF를 시분할하므로 CSI 단독 확인 뒤 추가.' },
+    { id: 'upload', name: '측정값 업로드', col: '--up', state: 'todo', stateText: '구현 필요', dashed: true, edges: RX.map(r => [r, 'rt']),
+      det: '수신기가 CSI·메타데이터를 큐에 넣고 공유기를 거쳐 UDP/TCP로 보낸다. 예제 csi_recv는 시리얼 출력이라 새로 구현해야 한다. 송신 ESP와 같은 채널이라 전송 시간을 나눠 쓴다.' },
+    { id: 'store', name: 'PC 저장', col: '--up', state: 'todo', stateText: '설정 필요', edges: [['rt', 'pc']],
+      det: '공유기(방 밖 PC 옆) → PC 수신 프로그램. LAN 권장. 수신기 시각·순번·PC 도착 시각을 따로 저장.' },
     { id: 'gt', name: '정답 영상', col: '--tape', state: 'todo', stateText: '시각 대응 확인', edges: [['pi', 'pc']],
       det: '카메라 영상으로 위치·자세·재실 라벨을 만든다. 센싱 입력에는 넣지 않는다.' },
     { id: 'uwb', name: 'DWM3000EVB (연결된 채)', col: '--shield', state: 'off', stateText: '사용 안 함', edges: [],
@@ -75,7 +76,7 @@
           const dot = new THREE.Mesh(new THREE.SphereGeometry(0.02, 12, 8), basic(C('--accent'))); dot.position.set(0, 0.02, -0.07); g.add(dot);
         } else {
           g.add(box(n.size[0], n.size[1], n.size[2], mat(C(n.col))));
-          if (n.kind === 'ap') [-0.1, 0, 0.1].forEach(k => g.add(rod(new THREE.Vector3(k, 0.03, 0.09), new THREE.Vector3(k, 0.22, 0.09), 0.007, mat(C('--board')))));
+          if (n.kind === 'router') [-0.1, 0, 0.1].forEach(k => g.add(rod(new THREE.Vector3(k, 0.03, 0.09), new THREE.Vector3(k, 0.22, 0.09), 0.007, mat(C('--board')))));
           if (n.kind === 'desk') { const s = box(0.4, 0.26, 0.01, mat(C('--board'))); s.position.set(0, 0.14, 0.14); s.rotation.x = 0.25; g.add(s); }
         }
         if (n.p[2] > 0.3) g.add(rod(new THREE.Vector3(0, -0.02, 0), new THREE.Vector3(0, -n.p[2], 0), 0.012, mat(C('--metal'))));

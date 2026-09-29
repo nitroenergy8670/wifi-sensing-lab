@@ -107,6 +107,10 @@
       const g = new THREE.Group();
       g.position.copy(V(d.x, d.y, d.z)); g.rotation.y = Math.atan2(d.nx, -d.ny);
       const sp = box(0.05, 0.08, 0.07, mat(C('--spacer'))); sp.position.z = -0.047; g.add(sp);
+      if (kind === 'tx') {
+        const esp = box(0.026, 0.063, 0.004, mat(C('--board'))); esp.position.set(0, -0.01, -0.008); g.add(esp);
+        const ant = box(0.012, 0.018, 0.003, mat(C('--metal'), { metalness: 0.6 })); ant.position.set(0, 0.028, -0.004); g.add(ant);
+      }
       if (kind === 'rx') {
         const esp = box(0.026, 0.063, 0.004, mat(C('--board'))); esp.position.set(-0.03, -0.01, -0.008); g.add(esp);
         const sh = box(0.054, 0.069, 0.004, mat(C('--shield'), { transparent: true, opacity: 0.55 })); sh.position.set(0.015, 0, -0.004); g.add(sh);
@@ -171,10 +175,19 @@
       pickable(top, { kind: 'desk' }, 'env');
       label('기록 PC (방 밖)', V(dx, dy, 1.0), '', 'env');
 
-      // 공유기
-      const apG = router(lay.ap); envG.add(apG); pickable(apG.userData.halo, { kind: 'ap' }, 'env');
+      // 매트 (정해 둔 눕기 자리)
+      const bd = S.bed(R), bm = box(S.BED.w, 0.04, S.BED.l, mat(C('--tape'), { roughness: 0.9 }));
+      bm.position.copy(V(bd.x, bd.y, 0.02)); envG.add(bm);
+      label('매트 (눕기 자리)', V(bd.x, bd.y - S.BED.l / 2 - 0.05, 0.08), 'plain', 'env');
+
+      // 송신 ESP (측정 링크의 송신원)
+      const apG = wallBoard(lay.ap, 'tx'); envG.add(apG); pickable(apG.userData.halo, { kind: 'ap' }, 'env');
       apPos = V(lay.ap.x, lay.ap.y, lay.ap.z);
-      label('공유기 · ' + lay.ap.z.toFixed(2) + ' m', V(lay.ap.x, lay.ap.y, lay.ap.z + 0.2), 'ap', 'env');
+      label('송신 ESP · ' + lay.ap.z.toFixed(2) + ' m', V(lay.ap.x, lay.ap.y, lay.ap.z + 0.1), 'ap', 'env');
+
+      // 공유기 (업로드 통로, PC 책상 위)
+      const rtG = router({ x: dx, y: dy + 0.3, z: 0.78, nx: -1, ny: 0 }); envG.add(rtG); pickable(rtG.userData.halo, { kind: 'router' }, 'env');
+      label('공유기 (업로드)', V(dx, dy + 0.3, 1.05), '', 'env');
 
       // 수신기
       const ringM = basic(C('--radio'), { transparent: true, opacity: 0.4, side: THREE.DoubleSide, depthWrite: false });
@@ -290,7 +303,6 @@
       [d.stand, d.sit, d.lie].forEach(g => { dynG.add(g); g.traverse(o => { if (o.isMesh) pickable(o, { kind: 'person' }, 'dyn'); }); });
       d.lieWrap = new THREE.Group(); dynG.remove(d.lie); d.lie.rotation.z = Math.PI / 2; d.lie.position.set(0.85, 0.16, 0); d.lieWrap.add(d.lie); d.lieWrap.rotation.y = Math.PI / 2; dynG.add(d.lieWrap);
       d.chair = makeChair(mat(C('--cable'))); dynG.add(d.chair);
-      d.mat = box(0.7, 0.04, 1.9, mat(C('--tape'), { roughness: 0.9 })); dynG.add(d.mat);
       d.furn = box(S.FURNITURE.hx * 2, S.FURNITURE.h, S.FURNITURE.hy * 2, mat(C('--furn'))); dynG.add(d.furn);
       pickable(d.furn, { kind: 'furniture' }, 'dyn');
       const tapeM = mat(C('--tape'), { roughness: 0.6 });
@@ -328,7 +340,7 @@
       if (!dyn) return;
       const d = dyn, p = st.person;
       d.stand.visible = d.sit.visible = d.lieWrap.visible = false;
-      d.chair.visible = d.mat.visible = false;
+      d.chair.visible = false;
       if (p) {
         if (p.pose === 'sit') {
           d.sit.visible = true; d.sit.position.copy(V(p.x, p.y, 0)); d.sit.rotation.y = p.hd;
@@ -336,7 +348,6 @@
           d.anchor.copy(V(p.x, p.y, 1.42));
         } else if (p.pose === 'lie') {
           d.lieWrap.visible = true; d.lieWrap.position.copy(V(p.x, p.y, 0));
-          d.mat.visible = true; d.mat.position.copy(V(p.x, p.y, 0.02));
           d.anchor.copy(V(p.x, p.y, 0.5));
         } else {
           d.stand.visible = true; d.stand.position.copy(V(p.x, p.y, 0)); d.stand.rotation.y = p.hd;
