@@ -155,19 +155,19 @@
       label(R.l.toFixed(2) + ' m', V(R.w + 0.18, R.l / 2, 0), 'plain', 'env');
       label('천장 ' + R.h.toFixed(2) + ' m', V(R.w, 0, R.h), 'plain', 'env');
 
-      // 문 (북쪽 벽 가운데, 위치는 예시)
-      const x0 = R.w / 2 - 0.45, x1 = R.w / 2 + 0.45;
-      const door = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 2.0), basic(C('--wall'), { transparent: true, opacity: 0.22, side: THREE.DoubleSide, depthWrite: false }));
-      door.position.copy(V(R.w / 2, R.l + 0.002, 1.0)); envG.add(door);
-      envG.add(new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints([V(x0, R.l, 0), V(x0, R.l, 2), V(x1, R.l, 2), V(x1, R.l, 0)]), new THREE.LineBasicMaterial({ color: C('--wall') })));
-      label('문 (예시)', V(R.w / 2, R.l, 2.08), 'plain', 'env');
+      // 문 (북쪽 벽 동쪽 끝)
+      const D = S.DOOR, dc = S.doorX(R), x0 = dc - D.width / 2, x1 = dc + D.width / 2;
+      const door = new THREE.Mesh(new THREE.PlaneGeometry(D.width, D.height), basic(C('--wall'), { transparent: true, opacity: 0.22, side: THREE.DoubleSide, depthWrite: false }));
+      door.position.copy(V(dc, R.l + 0.002, D.height / 2)); envG.add(door);
+      envG.add(new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints([V(x0, R.l, 0), V(x0, R.l, D.height), V(x1, R.l, D.height), V(x1, R.l, 0)]), new THREE.LineBasicMaterial({ color: C('--wall') })));
+      label('문', V(dc, R.l, D.height + 0.08), 'plain', 'env');
 
-      // 기록 PC (방 밖 책상)
-      const dx = R.w / 2 + 1.0, dy = -0.85;
-      const top = box(1.0, 0.04, 0.55, mat(C('--cable'))); top.position.copy(V(dx, dy, 0.72)); envG.add(top);
-      [[-0.46, -0.24], [0.46, -0.24], [-0.46, 0.24], [0.46, 0.24]].forEach(q => envG.add(rod(V(dx + q[0], dy + q[1], 0), V(dx + q[0], dy + q[1], 0.7), 0.015, mat(C('--metal')))));
-      const lap = box(0.32, 0.02, 0.22, mat(C('--board'))); lap.position.copy(V(dx, dy, 0.75)); envG.add(lap);
-      const scr = box(0.32, 0.21, 0.01, mat(C('--board'))); scr.position.copy(V(dx, dy - 0.11, 0.86)); scr.rotation.x = -0.25; envG.add(scr);
+      // 기록 PC (방 밖, 문 바로 옆 북동쪽 모서리. 책상 긴 쪽이 동쪽 벽과 나란함)
+      const dx = R.w + S.DESK.off, dy = R.l - S.DESK.back;
+      const top = box(0.55, 0.04, 1.0, mat(C('--cable'))); top.position.copy(V(dx, dy, 0.72)); envG.add(top);
+      [[-0.24, -0.46], [0.24, -0.46], [-0.24, 0.46], [0.24, 0.46]].forEach(q => envG.add(rod(V(dx + q[0], dy + q[1], 0), V(dx + q[0], dy + q[1], 0.7), 0.015, mat(C('--metal')))));
+      const lap = box(0.22, 0.02, 0.32, mat(C('--board'))); lap.position.copy(V(dx, dy, 0.75)); envG.add(lap);
+      const scr = box(0.01, 0.21, 0.32, mat(C('--board'))); scr.position.copy(V(dx + 0.11, dy, 0.86)); scr.rotation.z = 0.25; envG.add(scr);
       pickable(top, { kind: 'desk' }, 'env');
       label('기록 PC (방 밖)', V(dx, dy, 1.0), '', 'env');
 

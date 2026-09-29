@@ -6,6 +6,11 @@ window.WSIM = window.WSIM || {};
   S.ROOM_DEFAULT = { w: 3.11, l: 4.69, h: 3.04 };   // 사용자 확인 (2026-09-29)
   S.ROOM_REF = { w: 3.11, l: 4.69 };                // 배치 A–E 좌표를 만든 기준 방
   S.CABLE_LEN = 3.0;                                  // 수신기 USB 케이블 가정 길이
+  // 문: 북쪽 벽의 동쪽 끝 (사용자 지정 2026-09-30). inset = 동쪽 벽에서 문틀까지, width = 문 폭
+  S.DOOR = { inset: 0.15, width: 0.9, height: 2.0 };
+  S.doorX = room => room.w - S.DOOR.inset - S.DOOR.width / 2;   // 문 가운데 x
+  // 기록 PC 책상: 방 밖, 문 바로 옆 북동쪽 모서리. 동쪽 벽에서 off만큼 바깥, 북쪽 벽에서 back만큼 남쪽에 책상 가운데
+  S.DESK = { off: 0.6, back: 0.55 };
 
   // 배치 후보. 모두 설치 전 후보이며 확정 배치가 아니다.
   // A–E: 기존 2D 시뮬레이션(run_v2)의 수신기 xy와 높이. xy는 기준 방 비율로 늘이고 줄인다.
@@ -82,7 +87,7 @@ window.WSIM = window.WSIM || {};
     },
     desk: {
       role: '로그 수신·저장',
-      parts: ['PC 수신 프로그램 (구현 필요)', '공유기와 LAN 또는 5 GHz 연결 권장', 'PC 도착 시각만으로 수신 시각을 대신하지 않음', '배치는 예시 (방 밖 책상)']
+      parts: ['PC 수신 프로그램 (구현 필요)', '공유기와 LAN 또는 5 GHz 연결 권장', 'PC 도착 시각만으로 수신 시각을 대신하지 않음', '방 밖, 문 바로 옆 북동쪽 모서리 책상']
     },
     charger: {
       role: '수신기 전원',

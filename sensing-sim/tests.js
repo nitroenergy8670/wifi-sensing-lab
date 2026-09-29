@@ -89,7 +89,7 @@
   }
   function laps(lp, n) { const out = [lp[0]]; for (let k = 0; k < n; k++) lp.slice(1).forEach(p => out.push(p)); return out; }
   function loopLen(lp) { let d = 0; for (let i = 1; i < lp.length; i++) d += Math.hypot(lp[i][0] - lp[i - 1][0], lp[i][1] - lp[i - 1][1]); return d; }
-  T.door = room => ({ inside: [room.w / 2, room.l - 0.45], outside: [room.w / 2, room.l + 0.6] });
+  T.door = room => ({ inside: [S.doorX(room), room.l - 0.45], outside: [S.doorX(room), room.l + 0.6] });
   T.furnSpots = room => ({ a: [room.w - 0.45, room.l * 0.62], b: [room.w * 0.42, room.l * 0.5] });
 
   // ---- 테스트 목록 ----
@@ -189,7 +189,7 @@
     {
       id: 'occupancy', no: '5', name: '입·퇴실', who: '빈방 ↔ 재실', gt: true, ble: true,
       purpose: '빈방 → 들어옴 → 머묾 → 나감을 이어서 기록해 재실 라벨 자료를 만든다.',
-      prep: ['문 위치를 실측해 기록 (그림의 문은 예시)', '들어오고 나가는 시각을 카메라와 로그에 표시'],
+      prep: ['문 위치를 실측해 기록 (그림: 북쪽 벽 동쪽 끝)', '들어오고 나가는 시각을 카메라와 로그에 표시'],
       steps: ['빈방 30초', '들어와서 자리로 걸어감', '앉아서 60초', '나감', '3회 반복'],
       records: '연속 기록. 재실 여부 라벨을 초 단위로 둔다.',
       notes: ['문 여닫이 자체도 링크를 바꿀 수 있다. 문 상태를 따로 라벨로 남긴다'],
