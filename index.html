@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wi-Fi Sensing Lab</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Ccircle cx=%2716%27 cy=%2716%27 r=%2715%27 fill=%27%23256E5C%27/%3E%3Cpath d=%27M8 14a11 11 0 0 1 16 0M11 18a6.5 6.5 0 0 1 10 0%27 stroke=%27white%27 stroke-width=%272.4%27 fill=%27none%27 stroke-linecap=%27round%27/%3E%3Ccircle cx=%2716%27 cy=%2722%27 r=%272.2%27 fill=%27white%27/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --bg: #F3F6F5; --surface: #FFFFFF; --ink: #15201C; --muted: #5A6962; --line: #D2DBD7; --accent: #256E5C;
+    --font-sans: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+    --font-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { color-scheme: dark; --bg: #0F1513; --surface: #151D1A; --ink: #E1E8E4; --muted: #93A39B; --line: #2A3632; --accent: #6CC4A8; }
+  }
+  :root[data-theme="dark"] { color-scheme: dark; --bg: #0F1513; --surface: #151D1A; --ink: #E1E8E4; --muted: #93A39B; --line: #2A3632; --accent: #6CC4A8; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.6 var(--font-sans); }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 48px 16px 64px; display: grid; gap: 28px; }
+  .eyebrow { font: 500 12px/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+  h1 { font-size: 30px; line-height: 1.25; margin: 8px 0 6px; font-weight: 600; }
+  p { margin: 0; color: var(--muted); }
+  .list { display: grid; gap: 12px; }
+  a.item { display: grid; gap: 4px; padding: 16px 18px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: inherit; text-decoration: none; }
+  a.item:hover, a.item:focus-visible { border-color: var(--accent); outline: none; }
+  a.item b { font-size: 17px; font-weight: 600; }
+  a.item span { color: var(--muted); font-size: 14px; }
+  footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--line); padding-top: 14px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">장치 비착용 Wi-Fi 센싱 · 위치 · 자세 · 재실</div>
+    <h1>Wi-Fi Sensing Lab</h1>
+    <p>고정 공유기와 ESP32-S3 수신기 6대로 사람이 만드는 링크 변화를 관측하는 실험의 준비 자료. 배치는 후보, 신호는 합성 값이며 실측 결과가 아니다.</p>
+  </header>
+  <nav class="list" aria-label="페이지 목록">
+    <a class="item" href="sensing-sim/">
+      <b>센싱 시뮬레이터 →</b>
+      <span>필요한 장비, 방 배치와 프레넬 겹침 지도, 테스트별 진행 방식과 합성 신호, 장치 연결 경로를 3D로 확인한다.</span>
+    </a>
+  </nav>
+  <footer>장치 비착용 Wi-Fi 센싱 연구 실험 준비 자료</footer>
+</div>
+</body>
+</html>

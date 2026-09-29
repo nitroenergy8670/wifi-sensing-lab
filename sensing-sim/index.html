@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Wi-Fi 센싱 시뮬레이터</title>
+<script>
+  // 노션 임베드용 주소 옵션
+  //   ?only=env | tests | link : 그 섹션만 보여 준다
+  //   &view=only               : 옵션·패널 없이 3D 화면만
+  //   &test=check|empty|static|pose|walk|occupancy|change : 2번에서 처음 고를 테스트
+  //   &layout=F|A|B|C|D|E      : 처음 배치 후보
+  //   &zoom=1.4                : 3D 장면 확대 배율 (0.5–3)
+  (function () {
+    try {
+      var q = new URLSearchParams(location.search), h = document.documentElement, o = q.get('only');
+      if (/^(env|tests|link)$/.test(o || '')) h.setAttribute('data-only', o);
+      if (o && q.get('view') === 'only') h.setAttribute('data-vonly', '');
+      var z = parseFloat(q.get('zoom'));
+      if (z >= 0.5 && z <= 3) h.setAttribute('data-zoom', String(z));
+    } catch (e) { /* 무시 */ }
+  })();
+</script>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Ccircle cx=%2716%27 cy=%2716%27 r=%2715%27 fill=%27%23256E5C%27/%3E%3Cpath d=%27M8 14a11 11 0 0 1 16 0M11 18a6.5 6.5 0 0 1 10 0%27 stroke=%27white%27 stroke-width=%272.4%27 fill=%27none%27 stroke-linecap=%27round%27/%3E%3Ccircle cx=%2716%27 cy=%2722%27 r=%272.2%27 fill=%27white%27/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --bg: #F3F6F5; --surface: #FFFFFF; --ink: #15201C; --muted: #5A6962; --line: #D2DBD7;
+    --accent: #256E5C; --ok: #2E7D4F; --edge: #B7791F; --block: #C2362B;
+    --scene: #E6ECEA; --floor: #D9E1DE; --wall: #7F958D; --grid: #BAC7C2;
+    --board: #1E2623; --spacer: #F4F4EF; --shield: #8A9591; --ap: #1B6A87; --radio: #7A5AC8;
+    --person: #8C979B; --tape: #E8A33D; --cable: #6B7772; --metal: #A9B4B0; --furn: #9C7B5B;
+    --w-5v: #EE7A1F; --up: #1F6FD1; --sig-neg: #2F6FB3; --sig-pos: #C8612A;
+    --font-sans: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+    --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --bg: #0F1513; --surface: #151D1A; --ink: #E1E8E4; --muted: #93A39B; --line: #2A3632;
+      --accent: #6CC4A8; --ok: #5CC689; --edge: #E2B04A; --block: #F07167;
+      --scene: #121A17; --floor: #1C2623; --wall: #587068; --grid: #2C3A35;
+      --board: #0B0F0D; --spacer: #C9CCC4; --shield: #5E6966; --ap: #6BBFDD; --radio: #A68BEA;
+      --person: #7D878C; --tape: #D9A441; --cable: #8E9A95; --metal: #7F8A86; --furn: #B89573;
+      --w-5v: #F79A53; --up: #7FB2F5; --sig-neg: #5E9BE0; --sig-pos: #F08A4B;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #0F1513; --surface: #151D1A; --ink: #E1E8E4; --muted: #93A39B; --line: #2A3632;
+    --accent: #6CC4A8; --ok: #5CC689; --edge: #E2B04A; --block: #F07167;
+    --scene: #121A17; --floor: #1C2623; --wall: #587068; --grid: #2C3A35;
+    --board: #0B0F0D; --spacer: #C9CCC4; --shield: #5E6966; --ap: #6BBFDD; --radio: #A68BEA;
+    --person: #7D878C; --tape: #D9A441; --cable: #8E9A95; --metal: #7F8A86; --furn: #B89573;
+    --w-5v: #F79A53; --up: #7FB2F5; --sig-neg: #5E9BE0; --sig-pos: #F08A4B;
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.6 var(--font-sans); }
+  .wrap { max-width: 1240px; margin: 0 auto; padding: 32px 20px 64px; display: grid; gap: 48px; }
+  header { display: grid; gap: 8px; }
+  .eyebrow { font: 500 12px/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+  h1 { font-size: 30px; line-height: 1.25; margin: 0; font-weight: 600; text-wrap: balance; }
+  h2 { font-size: 21px; line-height: 1.3; margin: 0; font-weight: 600; text-wrap: balance; }
+  h3 { font-size: 15px; margin: 0; font-weight: 600; }
+  p { margin: 0; max-width: 72ch; }
+  .lede { color: var(--muted); }
+  code, .mono { font-family: var(--font-mono); font-size: .92em; }
+  section { display: grid; gap: 16px; min-width: 0; }
+  .notice { font-size: 13.5px; color: var(--muted); border-left: 3px solid var(--edge); padding: 4px 0 4px 12px; max-width: 80ch; }
+
+  /* 장비 목록 */
+  .equip { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; align-items: start; }
+  .egroup { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; display: grid; gap: 10px; }
+  .egroup-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .egroup-head span { font: 12px var(--font-mono); color: var(--muted); }
+  .eitem { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; padding-top: 8px; border-top: 1px solid var(--line); }
+  .egroup-head + .eitem { border-top: 0; padding-top: 0; }
+  .eitem b { font-weight: 500; }
+  .eitem .qty { font: 500 13px var(--font-mono); text-align: right; white-space: nowrap; }
+  .eitem .det { grid-column: 1 / -1; color: var(--muted); font-size: 13.5px; line-height: 1.5; }
+  .pill { display: inline-block; font: 500 11px/1.6 var(--font-mono); padding: 0 7px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); margin-left: 6px; vertical-align: 1px; }
+  .pill.have { color: var(--ok); border-color: currentColor; }
+  .pill.sug { color: var(--accent); border-color: currentColor; }
+
+  /* 3D 무대 */
+  .controls { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: end; }
+  .field { display: grid; gap: 4px; font-size: 13px; color: var(--muted); }
+  .field input[type=number], .field select { font: 14px var(--font-mono); color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; width: 100px; }
+  .field select { width: auto; font-family: var(--font-sans); }
+  .check { display: flex; gap: 6px; align-items: center; font-size: 13.5px; color: var(--ink); cursor: pointer; }
+  input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .stage { display: grid; grid-template-columns: minmax(0, 1fr) 350px; gap: 16px; align-items: start; }
+  .view { position: relative; height: clamp(380px, 64vh, 640px); border-radius: 10px; overflow: hidden; border: 1px solid var(--line); background: var(--scene); touch-action: none; }
+  .view canvas { display: block; width: 100%; height: 100%; }
+  .labels { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+  .lbl { position: absolute; left: 0; top: 0; transform: translate(-50%, -130%); white-space: nowrap; font: 500 11.5px/1.3 var(--font-mono); padding: 1px 6px; border-radius: 4px; background: color-mix(in srgb, var(--surface) 86%, transparent); color: var(--ink); border: 1px solid var(--line); }
+  .lbl.rx { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); }
+  .lbl.ap { color: var(--ap); border-color: color-mix(in srgb, var(--ap) 45%, var(--line)); }
+  .lbl.ble { color: var(--radio); border-color: color-mix(in srgb, var(--radio) 45%, var(--line)); }
+  .lbl.person { color: var(--muted); }
+  .lbl.over { color: var(--block); border-color: color-mix(in srgb, var(--block) 50%, var(--line)); }
+  .lbl.plain { background: none; border: 0; padding: 0; color: var(--muted); transform: translate(-50%, -50%); }
+  .lbl.pt { background: none; border: 0; padding: 0; color: var(--tape); font-weight: 600; transform: translate(-50%, -50%); }
+  .hud { position: absolute; left: 12px; top: 10px; display: grid; gap: 4px; pointer-events: none; max-width: calc(100% - 24px); }
+  .hud .rec { font: 500 12px var(--font-mono); display: inline-flex; gap: 6px; align-items: center; color: var(--muted); }
+  .hud .rec i { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); display: inline-block; }
+  .hud .rec.on { color: var(--block); }
+  .hud .rec.on i { background: var(--block); }
+  .hud .now { font-weight: 600; font-size: 14px; text-shadow: 0 0 6px var(--scene); }
+  .legend { position: absolute; right: 10px; top: 10px; display: flex; gap: 10px; flex-wrap: wrap; justify-content: end; font: 12px var(--font-mono); color: var(--muted); pointer-events: none; max-width: 70%; }
+  .legend span { display: inline-flex; align-items: center; gap: 5px; }
+  .legend i { width: 14px; height: 3px; border-radius: 2px; display: inline-block; }
+  .legend i.sq { width: 10px; height: 10px; border-radius: 2px; opacity: .75; }
+  .hint { position: absolute; right: 10px; bottom: 8px; font-size: 12px; color: var(--muted); pointer-events: none; }
+  .devcard { position: absolute; left: 10px; bottom: 10px; max-width: min(340px, calc(100% - 20px)); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; display: grid; gap: 6px; font-size: 13.5px; box-shadow: 0 4px 18px rgb(0 0 0 / .12); }
+  .devcard ul { margin: 0; padding-left: 18px; display: grid; gap: 2px; }
+  .devcard .role { color: var(--muted); font-size: 13px; }
+  .devcard button { justify-self: start; }
+
+  /* 사이드 패널 */
+  .side { display: grid; gap: 16px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; min-width: 0; }
+  .side h3 { font-size: 14px; }
+  .blk { display: grid; gap: 8px; }
+  .blk + .blk { border-top: 1px solid var(--line); padding-top: 14px; }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  th, td { text-align: left; padding: 4px 6px; border-bottom: 1px solid var(--line); }
+  th { color: var(--muted); font-weight: 500; font-size: 12px; }
+  td { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+  tr:last-child td { border-bottom: 0; }
+  td.bad { color: var(--block); font-weight: 500; }
+  td.good { color: var(--ok); }
+  .small { font-size: 13px; color: var(--muted); }
+  .warnbox { font-size: 13px; color: var(--block); }
+  .chips { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .chip { font: 500 12px var(--font-mono); padding: 4px 6px; border-radius: 6px; border: 1px solid var(--line); text-align: center; }
+  .chip.los { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 50%, var(--line)); }
+  .chip.edge { color: var(--edge); border-color: color-mix(in srgb, var(--edge) 55%, var(--line)); }
+  .chip.block { color: var(--block); border-color: color-mix(in srgb, var(--block) 55%, var(--line)); background: color-mix(in srgb, var(--block) 8%, transparent); }
+  .chip.off { color: var(--muted); border-style: dashed; }
+  .kv { display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; font-size: 13px; }
+  .kv dt { color: var(--muted); }
+  .kv dd { margin: 0; font-family: var(--font-mono); font-variant-numeric: tabular-nums; text-align: right; }
+  .bars { display: grid; gap: 5px; }
+  .bar { display: grid; grid-template-columns: 30px 1fr 64px; gap: 8px; align-items: center; font: 12px var(--font-mono); }
+  .bar .track { display: flex; height: 8px; border-radius: 4px; overflow: hidden; background: var(--line); }
+  .bar .track i { display: block; height: 100%; }
+  .bar .v { text-align: right; color: var(--muted); }
+  .sig { display: grid; grid-template-columns: 30px 1fr 64px; gap: 8px; align-items: center; font: 12px var(--font-mono); }
+  .sig .track { position: relative; height: 10px; border-radius: 3px; background: var(--line); }
+  .sig .track::after { content: ""; position: absolute; left: 50%; top: -2px; bottom: -2px; width: 1px; background: var(--muted); }
+  .sig .track i { position: absolute; top: 0; bottom: 0; border-radius: 3px; }
+  .sig .v { text-align: right; color: var(--muted); }
+  canvas.wf { width: 100%; height: 120px; border: 1px solid var(--line); border-radius: 6px; image-rendering: pixelated; background: var(--scene); }
+  .wfscale { display: flex; justify-content: space-between; font: 11px var(--font-mono); color: var(--muted); }
+  .wfscale i { display: inline-block; width: 80px; height: 8px; border-radius: 2px; background: linear-gradient(90deg, var(--sig-neg), var(--scene), var(--sig-pos)); vertical-align: middle; }
+  ol.steps { margin: 0; padding-left: 20px; display: grid; gap: 4px; font-size: 13.5px; }
+  ol.steps li { color: var(--muted); padding: 1px 0; }
+  ol.steps li.cur { color: var(--ink); font-weight: 600; }
+  ol.steps li.cur::marker { color: var(--accent); }
+
+  /* 테스트 탭·플레이어 */
+  .tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+  .tab { font: 14px var(--font-sans); padding: 7px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; display: inline-flex; gap: 8px; align-items: baseline; }
+  .tab .no { font: 500 12px var(--font-mono); color: var(--muted); }
+  .tab[aria-selected="true"] { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--surface)); }
+  .tab[aria-selected="true"] .no { color: var(--accent); }
+  .player { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; }
+  .player input[type=range] { flex: 1 1 240px; accent-color: var(--accent); }
+  button { font: inherit; font-size: 13.5px; padding: 6px 12px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; }
+  button:hover { border-color: var(--accent); }
+  button.primary { background: var(--accent); border-color: var(--accent); color: var(--surface); min-width: 72px; }
+  .time { font: 13px var(--font-mono); font-variant-numeric: tabular-nums; color: var(--muted); }
+  .testinfo { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; display: grid; gap: 8px; align-content: start; }
+  .card ul { margin: 0; padding-left: 18px; display: grid; gap: 3px; font-size: 14px; }
+  .card p { font-size: 14px; }
+  footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--line); padding-top: 16px; display: grid; gap: 4px; }
+
+  /* 장치 연결 */
+  .link-legend { position: absolute; right: 10px; top: 10px; display: flex; flex-wrap: wrap; gap: 6px; justify-content: end; max-width: min(560px, calc(100% - 20px)); }
+  .link-legend button { font: 12px var(--font-mono); padding: 3px 8px; display: inline-flex; gap: 6px; align-items: center; background: color-mix(in srgb, var(--surface) 88%, transparent); }
+  .link-legend button[aria-pressed="false"] { opacity: .5; text-decoration: line-through; }
+  .link-legend i { width: 14px; height: 4px; border-radius: 2px; display: inline-block; }
+  .ltab tbody tr { cursor: pointer; }
+  .ltab tbody tr:hover td, .ltab tbody tr.cur td { background: color-mix(in srgb, var(--accent) 11%, transparent); }
+  .ltab td { font-family: var(--font-sans); font-size: 12.5px; vertical-align: top; line-height: 1.4; }
+  .ltab td.st { font-family: var(--font-mono); white-space: nowrap; }
+  .st.ok { color: var(--ok); } .st.todo { color: var(--block); } .st.opt { color: var(--accent); } .st.off { color: var(--muted); }
+  .sw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+
+  /* 임베드 모드 (?only=) */
+  html[data-only] header, html[data-only] #equip, html[data-only] footer, html[data-only] .notice,
+  html[data-only] section > h2, html[data-only] section > .lede { display: none; }
+  html[data-only="env"] #tests, html[data-only="env"] #link,
+  html[data-only="tests"] #env, html[data-only="tests"] #link,
+  html[data-only="link"] #env, html[data-only="link"] #tests { display: none; }
+  html[data-only] .wrap { max-width: none; padding: 12px 12px 16px; gap: 14px; }
+  html[data-only] .view { height: clamp(360px, 62vh, 620px); }
+  html[data-vonly] .wrap { padding: 0; gap: 0; }
+  html[data-vonly] .controls, html[data-vonly] .side, html[data-vonly] #test-info { display: none; }
+  html[data-vonly] .stage { grid-template-columns: 1fr; gap: 0; }
+  html[data-vonly][data-only="env"] .view, html[data-vonly][data-only="link"] .view { height: 100vh; min-height: 300px; border: 0; border-radius: 0; }
+  html[data-vonly][data-only="tests"] section { gap: 8px; padding: 8px; }
+  html[data-vonly][data-only="tests"] .view { height: calc(100vh - 152px); min-height: 300px; }
+  @media (max-width: 900px) {
+    .stage { grid-template-columns: 1fr; }
+    .view { height: 400px; }
+    h1 { font-size: 25px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">장치 비착용 Wi-Fi 센싱 · 위치 · 자세 · 재실</div>
+    <h1>Wi-Fi 센싱 시뮬레이터</h1>
+    <p class="lede">고정 공유기 1대와 공동 앵커 보드를 전환한 ESP32-S3 수신기 6대로, 장치를 지니지 않은 사람이 만드는 링크 변화를 관측하는 실험을 3D로 미리 본다. 방 크기와 배치 후보를 바꾸면 수신기 좌표, 케이블 길이, 프레넬 겹침 지도, 테스트 경로가 다시 계산된다. 장치를 클릭하면 구성이 나온다.</p>
+    <p class="notice">배치는 설치 전 <b>후보</b>, 신호는 단순 반사·감쇠·산란 모델의 <b>합성 값</b>이다. 실제 수집·인식 정확도·필요 수신기 수를 보여 주지 않는다. 실측은 아직 하지 않았다.</p>
+  </header>
+
+  <section id="equip">
+    <h2>필요한 장비</h2>
+    <div class="equip" id="equip-list"></div>
+  </section>
+
+  <section id="env">
+    <h2>1. 테스트 환경</h2>
+    <p class="lede">공유기에서 수신기로 가는 직접경로 6개가 측정 링크다. 사람 상자가 링크의 제1 프레넬 영역(2.437 GHz)과 겹치면 그 링크가 사람의 영향을 크게 받는다고 본다. 바닥 지도는 사람이 그 자리에 섰을 때 겹치는 링크 수다.</p>
+    <div class="controls">
+      <label class="field">가로 x (m)<input type="number" id="room-w" min="2" max="10" step="0.01" value="3.11"></label>
+      <label class="field">세로 y (m)<input type="number" id="room-l" min="2" max="12" step="0.01" value="4.69"></label>
+      <label class="field">천장 (m)<input type="number" id="room-h" min="2.4" max="5" step="0.01" value="3.04"></label>
+      <label class="field">배치 후보<select id="layout"></select></label>
+      <label class="field">지도 자세
+        <select id="map-pose"><option value="stand">서기</option><option value="sit">앉기</option><option value="lie">눕기</option></select>
+      </label>
+      <label class="field">프레넬 영역
+        <select id="fresnel"><option value="sel">선택한 수신기</option><option value="all">전체 6개</option><option value="none">숨김</option></select>
+      </label>
+      <label class="field">수신기 전원
+        <select id="charger"><option value="one">충전기 1대</option><option value="two">충전기 2대 (긴 벽 양쪽)</option><option value="each">수신기마다 어댑터</option></select>
+      </label>
+      <label class="check"><input type="checkbox" id="show-map" checked> 겹침 지도</label>
+      <label class="check"><input type="checkbox" id="show-ble" checked> BLE 송신기</label>
+      <label class="check"><input type="checkbox" id="show-fov"> 카메라 화각</label>
+    </div>
+    <div class="stage">
+      <div class="view" id="env-view"></div>
+      <aside class="side" id="env-side"></aside>
+    </div>
+  </section>
+
+  <section id="tests">
+    <h2>2. 테스트 시뮬레이션</h2>
+    <p class="lede">테스트마다 사람이 어디에서 어떤 자세로 얼마나 머무는지 시간 순서대로 재생한다. 공유기 → 수신기 선은 사람 몸을 지나면 <b style="color:var(--block)">가림</b>, 제1 프레넬 영역과 겹치면 <b style="color:var(--edge)">경계</b>, 나머지는 <b style="color:var(--ok)">LOS</b>로 칠한다. 오른쪽 신호는 같은 상황의 합성 값이다.</p>
+    <div class="tabs" role="tablist" id="test-tabs"></div>
+    <div class="stage">
+      <div class="view" id="test-view"></div>
+      <aside class="side" id="test-side"></aside>
+    </div>
+    <div class="player">
+      <button type="button" class="primary" id="play">일시정지</button>
+      <button type="button" id="restart">처음으로</button>
+      <input type="range" id="scrub" min="0" max="100" step="0.1" value="0" aria-label="재생 위치">
+      <span class="time" id="time">00:00 / 00:00</span>
+      <label class="field" style="grid-auto-flow:column;align-items:center;gap:6px">배속
+        <select id="speed"><option value="1">×1</option><option value="5">×5</option><option value="15" selected>×15</option><option value="40">×40</option></select>
+      </label>
+    </div>
+    <div class="testinfo" id="test-info"></div>
+  </section>
+
+  <section id="link">
+    <h2>3. 장치 연결</h2>
+    <p class="lede">전원, 측정 링크, 업로드, 저장, 정답 영상이 어떤 장치 사이로 흐르는지 나눠 본다. <b style="color:var(--block)">구현 필요</b>로 표시한 경로는 아직 만들지 않았다. 보드 모양은 설명용이며 GPIO 핀 배선도가 아니다.</p>
+    <div class="stage">
+      <div class="view" id="link-view"></div>
+      <aside class="side" id="link-side"></aside>
+    </div>
+  </section>
+
+  <footer>
+    <span>근거: <code>research/equipment_alignment_2026-09-29/comparison_ko.md</code>(공동 구성안), <code>research/esp32s3_wireless_verification_2026-09-28/report_ko.md</code>(ESP 수집·업로드 검증), <code>research/room_simulation_2026-09-29</code>(배치 A–E와 합성 채널 모델).</span>
+    <span>합성 모델: 직접파 + 벽·바닥·천장 1회 반사, 사람 상자 통과 감쇠, 몸 중심 산란파 1개. 2.437 GHz, 52개 빈. 실제 재질·안테나·가구·RF 시분할·패킷 손실·AGC·CFO는 넣지 않았다.</span>
+    <span>시간·경로 값(점마다 60초, 걷기 0.8 m/s, 문 위치 등)은 예시다. 참고: UWB Lab 장비 시뮬레이터의 화면 구성.</span>
+  </footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="data.js"></script>
+<script src="model.js"></script>
+<script src="geom.js"></script>
+<script src="tests.js"></script>
+<script src="view3d.js"></script>
+<script src="link.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
